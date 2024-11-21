@@ -67,5 +67,5 @@ $ docker-compose up --build
 Documentation link: 
 
 ```bash
-$ https://documenter.getpostman.com/view/26141564/2sAYBSjtQq
+ https://documenter.getpostman.com/view/26141564/2sAYBSjtQq
 ```
