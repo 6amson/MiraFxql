@@ -22,7 +22,7 @@ export class UserController {
     constructor(private readonly userService: UserService) { }
 
     // @UseGuards(JwtAuthGuard)
-    @Post('')
+    @Post('fxql-statements')
     async parseFXQL(@Res() response: Response, @Body() body: { FXQL: string } ) {
         const fxqlStatement = body.FXQL.replace(/\\n/g, '\n'); 
         const res = await this.userService.parseFXQL(fxqlStatement);
