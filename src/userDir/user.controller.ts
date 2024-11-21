@@ -21,6 +21,11 @@ import { Response } from 'express';
 export class UserController {
     constructor(private readonly userService: UserService) { }
 
+    @Get('')
+    guardTheGate(){
+        return 'This is door is guarded.'
+    }
+
     // @UseGuards(JwtAuthGuard)
     @Post('fxql-statements')
     async parseFXQL(@Res() response: Response, @Body() body: { FXQL: string } ) {
