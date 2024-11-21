@@ -5,6 +5,7 @@ import { config } from 'dotenv';
 import { UserModule } from './userDir/user.module';
 import { UserController } from './userDir/user.controller';
 import { UserService } from './userDir/user.service';
+import { FXQL, FXQLSchema } from './schema/parser.schema';
 
 config();
 
@@ -17,7 +18,7 @@ const databaseUrl = process.env.DATABASE_URL;
       isGlobal: true, 
     }),
     MongooseModule.forFeature([
-      // { name: User.name, schema: UserSchema },
+      { name: FXQL.name, schema: FXQLSchema },
     ]),
     UserModule,
   ],

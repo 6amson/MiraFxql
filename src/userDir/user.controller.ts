@@ -1,5 +1,5 @@
-import { JwtAuthGuard } from 'Utils/guard/user.guard';
-import { RequestWithUser } from 'types/types';
+import { JwtAuthGuard } from '../Utils/guard/user.guard';
+import { RequestWithUser } from '../types/types';
 import {
     Controller,
     Post,
@@ -12,6 +12,7 @@ import {
     Query,
     Param,
     HttpException,
+    Redirect,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Response } from 'express';
@@ -21,25 +22,15 @@ import { Response } from 'express';
 export class UserController {
     constructor(private readonly userService: UserService) { }
 
-    @Get('')
-    guardTheGate(){
-        return 'This is door is guarded.'
-    }
+    @Get()
+    @Redirect('https://documenter.getpostman.com/view/26141564/2sAYBSjtQq', 302)
+    guard(){}
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Post('fxql-statements')
-    async parseFXQL(@Res() response: Response, @Body() body: { FXQL: string } ) {
-        const fxqlStatement = body.FXQL.replace(/\\n/g, '\n'); 
-        const res = await this.userService.parseFXQL(fxqlStatement);
-        return response.status(HttpStatus.CREATED).json(res);
-    }
-
-    @Post('2')
-    async parseFXQL2(@Res() response: Response, @Body() body: { FXQL: string } ) {
-        const fxqlStatement = body.FXQL.replace(/\\n/g, '\n'); 
+    async parseFXQL(@Res() response: Response, @Body() body: { FXQL: string }) {
+        const fxqlStatement = body.FXQL.replace(/\\n/g, '\n');
         const res = await this.userService.parseMultipleFXQL(fxqlStatement);
         return response.status(HttpStatus.CREATED).json(res);
     }
-
-
 }

@@ -16,13 +16,13 @@ const accessTokenSecret: string = process.env.ACCESS_TOKEN_SECRET;
 @Injectable()
 export class UserService {
     constructor(
-        @InjectModel(FXQL.name) private fxqlModel: Model<FXQL>,
+        @InjectModel("FXQL") private fxqlModel: Model<FXQL>,
     ) { }
 
 
     private generateAccessToken(payload: any): string {
         return jwt.sign({ payload }, accessTokenSecret, {
-            expiresIn: '1d',
+            expiresIn: '7d',
         });
     }
 
@@ -39,10 +39,10 @@ export class UserService {
 
     // Validates if the CAP value is a non-negative whole number
     private isValidCap(cap: string): boolean {
-        return /^\d+$/.test(cap) && parseInt(cap, 10) >= 0; // Ensure CAP is a non-negative integer
+        return /^\d+$/.test(cap) && parseInt(cap, 10) >= 0;
     }
 
-    public async parseFXQL(fxql: string): Promise<any> {
+    public async parseFXQLSingularStatement(fxql: string): Promise<any> {
 
         if (!fxql || typeof fxql !== 'string') {
             throw new HttpException(
@@ -51,29 +51,11 @@ export class UserService {
             );
         }
 
-        // Step 1: Clean up the input to remove escape characters (\n)
-        const cleanedFXQL = fxql.replace(/\\n/g, '\n'); // Replace escape sequences with actual newlines
-
-        // Step 2: Ensure that multiple statements are separated by newlines
-        // if (cleanedFXQL.split('\n').length > 1 && cleanedFXQL.includes('}')) {
-        //     throw new HttpException(
-        //         `Multiple statements should be separated by a single newline character.`,
-        //         HttpStatus.NOT_ACCEPTABLE,
-        //     );
-        // }
-
-        // return cleanedFXQL;
-
-
-        // Step 3: Match the structure (currency pair, BUY, SELL, CAP)
-        // const regex = /([A-Z]{3})-([A-Z]{3})\s*\{\s*BUY\s*([\d.]+)\s*SELL\s*([\d.]+)\s*CAP\s*(\d+)\s*\}/;
-        // const match = cleanedFXQL.match(regex);
-
         const pattern = /^([A-Z]{3}-[A-Z]{3}) {\n BUY (\d+(?:\.\d+)?)\n SELL (\d+(?:\.\d+)?)\n CAP (\d+)\n}$/;
 
-        // Step 3: Test the normalized string against the regex pattern
+        // Test the normalized string against the regex pattern
         const match = fxql.match(pattern);
-        // console.log({fxql: fxql});
+        console.log({ match: match, fxql: fxql })
 
         if (!match) {
             throw new HttpException(
@@ -83,10 +65,9 @@ export class UserService {
         }
 
         const [_, curmash, buy, sell, cap] = match;
-        // return { curmash, buy, sell, cap, match };
         const [curr1, curr2] = curmash.split("-");
 
-        // Step 4: Validate the currencies (CURR1 and CURR2)
+        // Validate the currencies (CURR1 and CURR2)
         if (!this.isValidCurrency(curr1) || !this.isValidCurrency(curr2)) {
             throw new HttpException(
                 `Invalid currency codes. Must be exactly 3 uppercase letters (e.g., USD, GBP).`,
@@ -94,7 +75,7 @@ export class UserService {
             );
         }
 
-        // Step 5: Validate BUY and SELL amounts
+        // Validate BUY and SELL amounts
         if (!this.isValidAmount(buy) || !this.isValidAmount(sell)) {
             throw new HttpException(
                 `BUY and SELL values must be valid positive numbers.`,
@@ -102,7 +83,7 @@ export class UserService {
             );
         }
 
-        // Step 6: Validate CAP
+        // Validate CAP
         if (!this.isValidCap(cap)) {
             throw new HttpException(
                 `CAP value must be a non-negative whole number.`,
@@ -110,7 +91,7 @@ export class UserService {
             );
         }
 
-        // Step 7: Check for the maximum capacity of parsed statements
+        // Check for the maximum capacity of parsed statements
         const count = await this.fxqlModel.countDocuments().exec();
         if (count >= 1000) {
             throw new HttpException(
@@ -119,7 +100,7 @@ export class UserService {
             );
         }
 
-        // Step 8: Create the parsed FXQL statement in the database
+        // Create the parsed FXQL statement in the database
         const parsedStatement = await this.fxqlModel.create({
             SourceCurrency: curr1,
             DestinationCurrency: curr2,
@@ -141,24 +122,21 @@ export class UserService {
         const results: any[] = [];
         for (const statement of statements) {
             try {
+                // Remove extra spaces between newline and BUY, SELL, and CAP (if there's more than one space)
                 let normalizedStatement = statement
-                // Reduce spaces between BUY, SELL, and CAP keywords and their values, but preserve line breaks.
-                .replace(/(BUY|SELL|CAP)\s+/g, '$1 ')  
-                .replace(/\s*\n\s*/g, '\n')  // Reduce extra spaces between lines, but keep the line breaks intact.
-                .trim();  // Trim any leading or trailing spaces
-
-            // Debug log to observe the normalization
-            // console.log('Original Statement:', statement);
-            // console.log('Normalized Statement:', normalizedStatement);
-                    console.log(statement, normalizedStatement);
-                const result = await this.parseFXQL(normalizedStatement); // Reuse the existing `parseFXQL` method
+                    .replace(/(\n)\s+(BUY|SELL|CAP)/g, '$1 $2')
+                    .trim();
+                const result = await this.parseFXQLSingularStatement(normalizedStatement);
                 results.push(result);
             } catch (error) {
-                // Capture errors for invalid statements
-                results.push({
-                    error: error.message,
-                    statement,
-                });
+                try {
+                    await this.parseFXQLSingularStatement(fxql);
+                } catch (error) {
+                    results.push({
+                        error: error.message,
+                        statement,
+                    });
+                }
             }
         }
 

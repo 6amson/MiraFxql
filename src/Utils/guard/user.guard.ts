@@ -1,8 +1,8 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
-import { httpErrorException } from 'src/app.exception';
+import { httpErrorException } from '../../app.exception';
 import { config } from 'dotenv';
-import { RequestWithUser } from 'types/types';
+import { RequestWithUser } from '../../types/types';
 
 config();
 
@@ -24,15 +24,15 @@ export class JwtAuthGuard implements CanActivate {
             request.user = payload;
 
             const {
-                accessToken: accessToken
+                payload: accessToken
             } = request.user;
-
             if (accessToken !== ACCESS_TOKEN) {
                 throw new httpErrorException('Invalid access token, please retry.', 401);
             }
 
             return true;
         } catch (error) {
+            console.log(error.message)
             throw new httpErrorException('Invalid credentials, please retry..', 401);
         }
     }

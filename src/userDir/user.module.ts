@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { FXQL, FXQLSchema } from 'src/schema/parser.schema';
+import { FXQL, FXQLSchema } from '../schema/parser.schema';
 
 
 @Module({
